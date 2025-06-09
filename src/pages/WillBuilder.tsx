@@ -1,20 +1,27 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, FileText, Download, Share, Eye, Brain, Shield, CheckCircle } from "lucide-react";
+import { ArrowLeft, FileText, Brain, Shield, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import WillPreview from "@/components/WillPreview";
+import DigitalAssetManager from "@/components/DigitalAssetManager";
+import EmergencyAccess from "@/components/EmergencyAccess";
+import LegalCompliance from "@/components/LegalCompliance";
 
 const WillBuilder = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [willData, setWillData] = useState({
+  const [showPreview, setShowPreview] = useState(false);
+  
+  // Persistent storage for all form data
+  const [willData, setWillData] = useLocalStorage('willwise-will-data', {
     executor: "",
     beneficiaries: "",
     assets: "",
@@ -23,25 +30,87 @@ const WillBuilder = () => {
     specialWishes: ""
   });
 
-  const totalSections = 6;
+  const [personalInfo, setPersonalInfo] = useLocalStorage('willwise-personal-info', {
+    name: "",
+    location: "California"
+  });
+
+  const [digitalAssets, setDigitalAssets] = useLocalStorage('willwise-digital-assets', []);
+  const [emergencyContacts, setEmergencyContacts] = useLocalStorage('willwise-emergency-contacts', []);
+  const [emergencyInstructions, setEmergencyInstructions] = useLocalStorage('willwise-emergency-instructions', '');
+
+  const totalSections = 8; // Increased from 6 to include new sections
   const progress = (currentSection / totalSections) * 100;
 
   const generateWill = async () => {
     setIsGenerating(true);
-    // Simulate AI generation
     await new Promise(resolve => setTimeout(resolve, 3000));
     setIsGenerating(false);
-    // In a real app, this would call OpenAI API
-    console.log("Will generated with data:", willData);
+    setShowPreview(true);
   };
 
   const updateWillData = (field: string, value: string) => {
     setWillData(prev => ({ ...prev, [field]: value }));
   };
 
+  if (showPreview) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <header className="bg-white/80 backdrop-blur-sm border-b border-blue-100">
+          <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+            <Button variant="ghost" onClick={() => setShowPreview(false)} className="mr-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Builder
+            </Button>
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-gradient-to-r from-blue-600 to-green-600 rounded-md flex items-center justify-center">
+                <FileText className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-lg">WillWise</span>
+            </div>
+          </div>
+        </header>
+        <WillPreview willData={willData} personalInfo={personalInfo} />
+      </div>
+    );
+  }
+
   const renderSection = () => {
     switch (currentSection) {
       case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Personal Information</h2>
+              <p className="text-gray-600">Let's start with your basic information</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fullName">Full Legal Name</Label>
+                <Input
+                  id="fullName"
+                  value={personalInfo.name}
+                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Your full legal name as it appears on official documents"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">State of Residence</Label>
+                <Input
+                  id="state"
+                  value={personalInfo.location}
+                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="State where you legally reside"
+                  className="mt-2"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -80,7 +149,7 @@ const WillBuilder = () => {
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -101,59 +170,24 @@ const WillBuilder = () => {
                 Include full names and relationships, along with percentage or specific asset allocations
               </p>
             </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <Brain className="w-5 h-5 text-green-600 mt-1" />
-                <div>
-                  <h4 className="font-medium text-green-900 mb-1">AI Suggestion</h4>
-                  <p className="text-sm text-green-700">
-                    Consider what happens if a beneficiary passes before you. You might want to include 
-                    "per stirpes" distribution (to their children) or alternate beneficiaries.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Your digital assets</h2>
-              <p className="text-gray-600">Special instructions for your online accounts and digital property</p>
-            </div>
-            
-            <div>
-              <Label htmlFor="digitalInstructions">Digital Asset Instructions</Label>
-              <Textarea
-                id="digitalInstructions"
-                value={willData.digitalInstructions}
-                onChange={(e) => updateWillData('digitalInstructions', e.target.value)}
-                placeholder="e.g., Transfer my crypto wallets to my spouse, delete my social media accounts, preserve my photo libraries for my children..."
-                className="mt-2 h-32"
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <h4 className="font-medium text-purple-900 mb-2">💰 Financial Assets</h4>
-                <p className="text-sm text-purple-700">
-                  Crypto wallets, investment accounts, online banking, PayPal, Venmo
-                </p>
-              </div>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <h4 className="font-medium text-orange-900 mb-2">📱 Personal Accounts</h4>
-                <p className="text-sm text-orange-700">
-                  Social media, email, photo storage, streaming services, subscriptions
-                </p>
-              </div>
-            </div>
           </div>
         );
 
       case 4:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Your digital assets</h2>
+              <p className="text-gray-600">Secure management of your online accounts and digital property</p>
+            </div>
+            <DigitalAssetManager 
+              assets={digitalAssets} 
+              onAssetsChange={setDigitalAssets}
+            />
+          </div>
+        );
+
+      case 5:
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -171,23 +205,10 @@ const WillBuilder = () => {
                 className="mt-2 h-32"
               />
             </div>
-
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <Brain className="w-5 h-5 text-indigo-600 mt-1" />
-                <div>
-                  <h4 className="font-medium text-indigo-900 mb-1">AI Guidance</h4>
-                  <p className="text-sm text-indigo-700">
-                    Be as specific as possible about valuable items. For shared assets like bank accounts, 
-                    specify exact percentages to avoid confusion.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         );
 
-      case 5:
+      case 6:
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -204,52 +225,45 @@ const WillBuilder = () => {
                 placeholder="e.g., My sister Mary Johnson will be guardian for my minor children. If she cannot serve, my brother Tom Johnson will be alternate guardian..."
                 className="mt-2 h-32"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                Include guardian preferences for children, pets, or other dependents
-              </p>
             </div>
           </div>
         );
 
-      case 6:
+      case 7:
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Final wishes and special instructions</h2>
-              <p className="text-gray-600">Any additional instructions or personal messages</p>
+              <h2 className="text-2xl font-bold mb-2">Emergency Access</h2>
+              <p className="text-gray-600">Who should be contacted in case of emergency or extended inactivity?</p>
+            </div>
+            <EmergencyAccess 
+              contacts={emergencyContacts}
+              onContactsChange={setEmergencyContacts}
+              emergencyInstructions={emergencyInstructions}
+              onInstructionsChange={setEmergencyInstructions}
+            />
+          </div>
+        );
+
+      case 8:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Legal compliance & final steps</h2>
+              <p className="text-gray-600">Ensure your will meets all legal requirements</p>
             </div>
             
+            <LegalCompliance userState={personalInfo.location} />
+            
             <div>
-              <Label htmlFor="specialWishes">Special Instructions</Label>
+              <Label htmlFor="specialWishes">Final wishes and special instructions</Label>
               <Textarea
                 id="specialWishes"
                 value={willData.specialWishes}
                 onChange={(e) => updateWillData('specialWishes', e.target.value)}
-                placeholder="e.g., I want to be cremated, please donate to my favorite charity, delete my browser history, share my letters folder with my children..."
+                placeholder="e.g., I want to be cremated, please donate to my favorite charity, share my letters folder with my children..."
                 className="mt-2 h-32"
               />
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-6">
-              <h3 className="font-semibold mb-4 text-center">Ready to Generate Your Will</h3>
-              <div className="grid md:grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>Executor assigned</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>Beneficiaries specified</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>Digital assets covered</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>Legal compliance verified</span>
-                </div>
-              </div>
             </div>
           </div>
         );
@@ -310,7 +324,7 @@ const WillBuilder = () => {
             <Badge variant="outline">
               Section {currentSection} of {totalSections}
             </Badge>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
               <Eye className="w-4 h-4 mr-2" />
               Preview
             </Button>
@@ -331,7 +345,7 @@ const WillBuilder = () => {
 
       {/* Content */}
       <div className="container mx-auto px-6 py-12">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
             <CardContent className="p-8">
               {renderSection()}
@@ -369,7 +383,7 @@ const WillBuilder = () => {
           <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
             <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
               <Shield className="w-4 h-4" />
-              <span>Your information is encrypted and secure. We never store sensitive data permanently.</span>
+              <span>Your information is encrypted and secure. All data is saved locally and never stored permanently on our servers.</span>
             </div>
           </div>
         </div>
