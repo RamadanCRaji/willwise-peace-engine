@@ -1,22 +1,20 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Eye, EyeOff, Shield } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Smartphone, CreditCard, Cloud } from "lucide-react";
 
 interface DigitalAsset {
   id: string;
+  type: 'social' | 'financial' | 'crypto' | 'cloud' | 'other';
   name: string;
-  type: string;
-  url: string;
   username: string;
-  password: string;
   instructions: string;
-  importance: 'high' | 'medium' | 'low';
+  priority: 'high' | 'medium' | 'low';
 }
 
 interface DigitalAssetManagerProps {
@@ -25,210 +23,178 @@ interface DigitalAssetManagerProps {
 }
 
 const DigitalAssetManager = ({ assets, onAssetsChange }: DigitalAssetManagerProps) => {
-  const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
+  const [showForm, setShowForm] = useState(false);
   const [newAsset, setNewAsset] = useState<Partial<DigitalAsset>>({
+    type: 'social',
+    priority: 'medium',
     name: '',
-    type: '',
-    url: '',
     username: '',
-    password: '',
-    instructions: '',
-    importance: 'medium'
+    instructions: ''
   });
 
+  const assetTypes = [
+    { value: 'social', label: 'Social Media', icon: Smartphone },
+    { value: 'financial', label: 'Financial', icon: CreditCard },
+    { value: 'crypto', label: 'Cryptocurrency', icon: CreditCard },
+    { value: 'cloud', label: 'Cloud Storage', icon: Cloud },
+    { value: 'other', label: 'Other', icon: Smartphone }
+  ];
+
   const addAsset = () => {
-    if (!newAsset.name || !newAsset.type) return;
-    
-    const asset: DigitalAsset = {
-      id: Date.now().toString(),
-      name: newAsset.name,
-      type: newAsset.type,
-      url: newAsset.url || '',
-      username: newAsset.username || '',
-      password: newAsset.password || '',
-      instructions: newAsset.instructions || '',
-      importance: newAsset.importance || 'medium'
-    };
-    
-    onAssetsChange([...assets, asset]);
-    setNewAsset({
-      name: '',
-      type: '',
-      url: '',
-      username: '',
-      password: '',
-      instructions: '',
-      importance: 'medium'
-    });
+    if (newAsset.name && newAsset.username) {
+      const asset: DigitalAsset = {
+        id: Date.now().toString(),
+        type: newAsset.type as DigitalAsset['type'],
+        name: newAsset.name,
+        username: newAsset.username,
+        instructions: newAsset.instructions || '',
+        priority: newAsset.priority as DigitalAsset['priority']
+      };
+      
+      onAssetsChange([...assets, asset]);
+      setNewAsset({
+        type: 'social',
+        priority: 'medium',
+        name: '',
+        username: '',
+        instructions: ''
+      });
+      setShowForm(false);
+    }
   };
 
   const removeAsset = (id: string) => {
     onAssetsChange(assets.filter(asset => asset.id !== id));
   };
 
-  const togglePasswordVisibility = (id: string) => {
-    setShowPasswords(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+  const getAssetIcon = (type: string) => {
+    const assetType = assetTypes.find(t => t.value === type);
+    return assetType ? assetType.icon : Smartphone;
   };
-
-  const assetTypes = [
-    'Social Media', 'Email Account', 'Cloud Storage', 'Cryptocurrency Wallet',
-    'Investment Account', 'Domain/Website', 'Subscription Service', 'Photo Library'
-  ];
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Digital Asset Manager
+          <CardTitle className="flex items-center justify-between">
+            Digital Assets ({assets.length})
+            <Button 
+              onClick={() => setShowForm(!showForm)}
+              size="sm"
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Digital Asset
+            </Button>
           </CardTitle>
-          <p className="text-sm text-gray-600">
-            Securely store access information for your digital accounts and assets
-          </p>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <Label htmlFor="assetName">Asset Name</Label>
-              <Input
-                id="assetName"
-                value={newAsset.name}
-                onChange={(e) => setNewAsset(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Gmail Account, Coinbase Wallet"
-              />
-            </div>
-            <div>
-              <Label htmlFor="assetType">Asset Type</Label>
-              <select
-                className="w-full p-2 border border-gray-300 rounded-md"
-                value={newAsset.type}
-                onChange={(e) => setNewAsset(prev => ({ ...prev, type: e.target.value }))}
-              >
-                <option value="">Select type...</option>
-                {assetTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="assetUrl">URL/Website</Label>
-              <Input
-                id="assetUrl"
-                value={newAsset.url}
-                onChange={(e) => setNewAsset(prev => ({ ...prev, url: e.target.value }))}
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="assetUsername">Username/Email</Label>
-              <Input
-                id="assetUsername"
-                value={newAsset.username}
-                onChange={(e) => setNewAsset(prev => ({ ...prev, username: e.target.value }))}
-                placeholder="Username or email"
-              />
-            </div>
-            <div>
-              <Label htmlFor="assetPassword">Password/Recovery Info</Label>
-              <Input
-                id="assetPassword"
-                type="password"
-                value={newAsset.password}
-                onChange={(e) => setNewAsset(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="Password, seed phrase, or recovery info"
-              />
-            </div>
-            <div>
-              <Label htmlFor="importance">Importance Level</Label>
-              <select
-                className="w-full p-2 border border-gray-300 rounded-md"
-                value={newAsset.importance}
-                onChange={(e) => setNewAsset(prev => ({ ...prev, importance: e.target.value as 'high' | 'medium' | 'low' }))}
-              >
-                <option value="high">High Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="low">Low Priority</option>
-              </select>
-            </div>
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="assetInstructions">Special Instructions</Label>
-            <Textarea
-              id="assetInstructions"
-              value={newAsset.instructions}
-              onChange={(e) => setNewAsset(prev => ({ ...prev, instructions: e.target.value }))}
-              placeholder="e.g., Transfer to spouse, delete account, preserve for children..."
-              className="h-20"
-            />
-          </div>
-          <Button onClick={addAsset} className="w-full">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Digital Asset
-          </Button>
-        </CardContent>
-      </Card>
-
-      {assets.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Your Digital Assets ({assets.length})</h3>
-          {assets.map(asset => (
-            <Card key={asset.id} className="border-l-4 border-l-blue-500">
+          {showForm && (
+            <Card className="mb-6 border-blue-200 bg-blue-50">
               <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold">{asset.name}</h4>
-                    <Badge variant="outline" className="text-xs">
-                      {asset.type}
-                    </Badge>
-                    <Badge 
-                      variant={asset.importance === 'high' ? 'destructive' : asset.importance === 'medium' ? 'default' : 'secondary'}
-                      className="ml-2 text-xs"
+                    <Label htmlFor="assetType">Asset Type</Label>
+                    <select
+                      id="assetType"
+                      value={newAsset.type}
+                      onChange={(e) => setNewAsset(prev => ({ ...prev, type: e.target.value as DigitalAsset['type'] }))}
+                      className="w-full mt-1 p-2 border border-gray-300 rounded-md"
                     >
-                      {asset.importance} priority
-                    </Badge>
+                      {assetTypes.map(type => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeAsset(asset.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-2 text-sm">
-                  {asset.url && <p><strong>URL:</strong> {asset.url}</p>}
-                  {asset.username && <p><strong>Username:</strong> {asset.username}</p>}
-                  {asset.password && (
-                    <p className="flex items-center gap-2">
-                      <strong>Password:</strong> 
-                      {showPasswords[asset.id] ? asset.password : '••••••••'}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => togglePasswordVisibility(asset.id)}
-                      >
-                        {showPasswords[asset.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      </Button>
-                    </p>
-                  )}
-                </div>
-                
-                {asset.instructions && (
-                  <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                    <strong>Instructions:</strong> {asset.instructions}
+                  <div>
+                    <Label htmlFor="assetName">Platform/Service Name</Label>
+                    <Input
+                      id="assetName"
+                      value={newAsset.name}
+                      onChange={(e) => setNewAsset(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Gmail, Twitter, Coinbase"
+                      className="mt-1"
+                    />
                   </div>
-                )}
+                  <div>
+                    <Label htmlFor="username">Username/Email</Label>
+                    <Input
+                      id="username"
+                      value={newAsset.username}
+                      onChange={(e) => setNewAsset(prev => ({ ...prev, username: e.target.value }))}
+                      placeholder="Username or email address"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="priority">Priority</Label>
+                    <select
+                      id="priority"
+                      value={newAsset.priority}
+                      onChange={(e) => setNewAsset(prev => ({ ...prev, priority: e.target.value as DigitalAsset['priority'] }))}
+                      className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Label htmlFor="instructions">Special Instructions</Label>
+                  <Textarea
+                    id="instructions"
+                    value={newAsset.instructions}
+                    onChange={(e) => setNewAsset(prev => ({ ...prev, instructions: e.target.value }))}
+                    placeholder="e.g., Transfer to spouse, delete account, preserve for children..."
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={addAsset} size="sm">Add Asset</Button>
+                  <Button onClick={() => setShowForm(false)} variant="outline" size="sm">Cancel</Button>
+                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          )}
+
+          {assets.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Cloud className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>No digital assets added yet</p>
+              <p className="text-sm">Add your online accounts, crypto wallets, and digital properties</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {assets.map((asset) => {
+                const IconComponent = getAssetIcon(asset.type);
+                return (
+                  <div key={asset.id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <IconComponent className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <p className="font-medium">{asset.name}</p>
+                        <p className="text-sm text-gray-600">{asset.username}</p>
+                        {asset.instructions && (
+                          <p className="text-sm text-gray-500 mt-1">{asset.instructions}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={asset.priority === 'high' ? 'destructive' : asset.priority === 'medium' ? 'default' : 'secondary'}>
+                        {asset.priority}
+                      </Badge>
+                      <Button onClick={() => removeAsset(asset.id)} variant="ghost" size="sm">
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

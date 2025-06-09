@@ -1,8 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { generateWillPDF } from "@/utils/pdfGenerator";
 
 interface WillData {
   executor: string;
@@ -30,8 +30,12 @@ const WillPreview = ({ willData, personalInfo }: WillPreviewProps) => {
   });
 
   const downloadPDF = () => {
-    // In a real app, this would generate a PDF
-    console.log("Generating PDF...");
+    try {
+      generateWillPDF(willData, personalInfo || { name: '', location: '' });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
   };
 
   return (
